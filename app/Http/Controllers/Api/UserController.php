@@ -42,6 +42,17 @@ class UserController extends Controller
             $data['alamat'] = $request->alamat;
         }
         if($request->old_password && $request->new_password){
+            try{
+            $request->validate([
+                'old_password' => 'required|string',
+                'new_password' => 'required|string',
+            ]);
+            }catch(\Exception $e){
+                return GeneralResource::formatResponse([
+                    'status' => 400,
+                    'message' => $e->getMessage(),
+                ]);
+            }
             //get user password
             $user = $request->user();
             //check if password is same with old password
@@ -60,6 +71,9 @@ class UserController extends Controller
             }
             //update password
             $data['password'] = Hash::make($request->new_password);
+            //delete all token except current token
+            $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
+            
         }
         
         if(!$data){
